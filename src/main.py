@@ -38,7 +38,7 @@ async def create_new_part(
     name: str = Form(...),
     sku: str = Form(...),
     side_image: UploadFile = File(...),
-    frontal_image: UploadFile = File(...)
+    front_image: UploadFile = File(...)
 ):
     
     # Check if a part with this SKU already exists
@@ -46,14 +46,14 @@ async def create_new_part(
     if db_part:
         raise HTTPException(status_code=400, detail=f"SKU '{sku}' already registered.")
 
-    input_side_image_url = f"uploads/images/{side_image.filename}"
-    input_front_image_url = f"uploads/images/{front_image.filename}" if secondary_image else None
+    side_image_url = f"uploads/images/{side_image.filename}"
+    front_image_url = f"uploads/images/{front_image.filename}" 
         
     part_data = schemas.PartCreate(
         name=name,
         sku=sku,
-        input_side_image_url=input_side_image_url,
-        input_front_image_url=input_front_image_url
+        side_image_url=side_image_url,
+        front_image_url=front_image_url
     )
     
     return crud.create_part(db=db, part=part_data)
@@ -88,8 +88,8 @@ def read_dashboard_stats(db: Session = Depends(get_db)):
 async def create_comparison_job(
     db: Session = Depends(get_db),
     part_id: int = Form(...),
-    imagem_frontal: UploadFile = File(...),
-    imagem_lateral: UploadFile = File(...)
+    input_side_image: UploadFile = File(...),
+    input_front_image: UploadFile = File(...)
 ):
     job_id = "simulated-job-12345" # This would be the real ID from the DB
     print(f"Job created with ID: {job_id} for part {part_id}")
@@ -108,3 +108,35 @@ def get_job_status(job_id: str, db: Session = Depends(get_db)):
             "status": "complete",
             "modelUrl": "uploads/models/result-model.gltf"
         }
+
+@app.post("/api/compare/", response_model=schemas.ComparisonJob)
+async def create_and_run_comparison(
+    db: Session = Depends(get_db),
+    part_id: int = Form(...),
+    input_side_image: UploadFile = File(...),
+    input_front_image: UploadFile = File(...)
+):
+    """
+    Receives images, saves the record, and immediately returns
+    the result with a placeholder 3D model URL.
+    """
+    
+    front_image_url = f"uploads/inputs/{input_side_image.filename}"
+    side_image_url = f"uploads/inputs/{input_front_image.filename}"
+    # TODO: Implementar o salvamento real dos arquivos.
+
+    placeholder_model_url = "src\examples\key.stl"
+
+    job_schema = schemas.ComparisonJobCreate(
+        part_id=part_id,
+        input_front_image_url=front_image_url,
+        input_side_image_url=side_image_url
+    )
+    db_job = crud.create_job(db=db, job=job_schema)
+
+    return crud.update_job_status(
+        db=db, 
+        job_id=db_job.id, 
+        status="COMPLETE", 
+        output_url=placeholder_model_url
+    )
