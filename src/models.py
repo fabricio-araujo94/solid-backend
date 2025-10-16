@@ -12,8 +12,10 @@ class Part(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     sku = Column(String(50), nullable=False, unique=True, index=True)
-    main_image_url = Column(String(255), nullable=False)
-    secondary_image_url = Column(String(255), nullable=True)
+    side_image_url = Column(String(255), nullable=False)
+    front_image_url = Column(String(255), nullable=False)
+    
+    model_3d_url = Column(String(255), nullable=False, default="./examples/key.stl")
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -35,8 +37,8 @@ class ComparisonJob(Base):
     part_id = Column(Integer, ForeignKey("parts.id"), nullable=False)
 
     status = Column(String(50), nullable=False, default="PENDING")
-    input_front_image_url = Column(String(255), nullable=False)
     input_side_image_url = Column(String(255), nullable=False)
+    input_front_image_url = Column(String(255), nullable=False)
     output_model_url = Column(String(255), nullable=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())

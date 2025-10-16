@@ -6,8 +6,8 @@ from datetime import datetime
 class PartBase(BaseModel):
     name: str
     sku: str
-    main_image_url: str
-    secondary_image_url: Optional[str] = None
+    side_image_url: str
+    front_image_url: str
 
 class PartCreate(PartBase):
     pass
