@@ -82,20 +82,22 @@ def read_dashboard_stats(db: Session = Depends(get_db)):
     stats = crud.get_dashboard_stats(db=db)
     return stats
 
-# Endpoints for ComparisonJob
-
-@app.post("/api/compare/", response_model=schemas.JobResponse)
-async def create_comparison_job(
-    db: Session = Depends(get_db),
-    part_id: int = Form(...),
-    input_side_image: UploadFile = File(...),
-    input_front_image: UploadFile = File(...)
-):
-    job_id = "simulated-job-12345" # This would be the real ID from the DB
-    print(f"Job created with ID: {job_id} for part {part_id}")
+@app.get("/api/parts/{part_id}/jobs", response_model=List[schemas.ComparisonJob])
+def read_jobs_by_part(part_id: int, db: Session = Depends(get_db)):
+    """
+    Returns the history of comparisons (inspections) for a specific part.
+    """
     
-    return {"jobId": job_id}
+    db_part = crud.get_part(db, part_id=part_id)
+    if db_part is None:
+        raise HTTPException(status_code=404, detail="Part not found")
+    
+    # Since the relationship is configured in models.py, we can access it directly
+    # or make a query filtering by ID. The query is safer if the list is large.
+    jobs = db.query(models.ComparisonJob).filter(models.ComparisonJob.part_id == part_id).all()
+    return jobs
 
+# Endpoints for ComparisonJob
 
 @app.get("/api/compare/status/{job_id}", response_model=schemas.JobStatusResponse)
 def get_job_status(job_id: str, db: Session = Depends(get_db)):
