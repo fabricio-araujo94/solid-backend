@@ -1,3 +1,5 @@
 fastapi[all]
-sqlalchemy
-mysqlclient
+SQLAlchemy>=1.4
+pymysql
+python-dotenv
+python-multipart
