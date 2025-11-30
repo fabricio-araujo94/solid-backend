@@ -1,16 +1,21 @@
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from typing import List, Annotated
+
+import uuid
+import os
+import shutil
+import random
 
 from . import crud, models, schemas
 from .database import SessionLocal, engine
 
-import random
-
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 origins = [
     "http://localhost:4200", # Angular
@@ -46,9 +51,22 @@ async def create_new_part(
     if db_part:
         raise HTTPException(status_code=400, detail=f"SKU '{sku}' already registered.")
 
-    side_image_url = f"uploads/images/{side_image.filename}"
-    front_image_url = f"uploads/images/{front_image.filename}" 
+    STATIC_IMAGES_DIR = "static/images"
+    
+    async def save_file_and_get_url(upload_file: UploadFile) -> str:
+        file_extension = upload_file.filename.split('.')[-1]
+        unique_filename = f"{uuid.uuid4()}.{file_extension}"
+        file_path_on_disk = os.path.join(STATIC_IMAGES_DIR, unique_filename)
         
+        with open(file_path_on_disk, "wb+") as file_object:
+            shutil.copyfileobj(upload_file.file, file_object)
+        
+        base_url = "http://localhost:8000" 
+        return f"{base_url}/static/images/{unique_filename}"
+
+    side_image_url = await save_file_and_get_url(side_image)
+    front_image_url = await save_file_and_get_url(front_image)
+
     part_data = schemas.PartCreate(
         name=name,
         sku=sku,
@@ -97,6 +115,27 @@ def read_jobs_by_part(part_id: int, db: Session = Depends(get_db)):
     jobs = db.query(models.ComparisonJob).filter(models.ComparisonJob.part_id == part_id).all()
     return jobs
 
+# main.py (Adicione em sua seção de endpoints de ComparisonJob)
+
+# NOVO ENDPOINT: Atualiza o status final de um ComparisonJob (Aprovar/Reprovar)
+@app.put("/api/compare/{job_id}/status", response_model=schemas.ComparisonJob)
+def update_job_status_final(job_id: int, new_status: str, db: Session = Depends(get_db)):
+    """
+    Endpoint for Managers/Operators to record the final decision of approval or rejection
+    after comparison. The 'new_status' can be 'APPROVED' or 'REJECTED'.
+    """
+    db_job = db.query(models.ComparisonJob).filter(models.ComparisonJob.id == job_id).first()
+    if db_job is None:
+        raise HTTPException(status_code=404, detail="Comparison Job not found")
+    
+    if new_status.upper() not in ["APPROVED", "REJECTED"]:
+        raise HTTPException(status_code=400, detail="Invalid status value. Must be APPROVED or REJECTED.")
+
+    db_job.status = new_status.upper()
+    db.commit()
+    db.refresh(db_job)
+    return db_job
+
 # Endpoints for ComparisonJob
 
 @app.get("/api/compare/status/{job_id}", response_model=schemas.JobStatusResponse)
@@ -125,7 +164,6 @@ async def create_and_run_comparison(
     
     front_image_url = f"uploads/inputs/{input_side_image.filename}"
     side_image_url = f"uploads/inputs/{input_front_image.filename}"
-    # TODO: Implementar o salvamento real dos arquivos.
 
     placeholder_model_url = "src\examples\key.stl"
 
