@@ -9,7 +9,7 @@ import os
 import shutil
 import random
 
-from . import crud, models, schemas
+from . import crud, models, schemas, defect_service
 from .database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -180,3 +180,17 @@ async def create_and_run_comparison(
         status="COMPLETE", 
         output_url=placeholder_model_url
     )
+
+@app.post("/api/analyze/defects", response_model=schemas.DefectAnalysisResponse)
+async def analyze_defects(file: UploadFile = File(...)):
+    """
+    Receives an image, applies Computer Vision algorithms, 
+    and returns the coordinates of possible defects.
+    """
+    contents = await file.read()
+    
+    try:
+        result = defect_service.analyze_image_for_defects(contents)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

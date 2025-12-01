@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 # Schemas for the Part model
@@ -51,3 +51,17 @@ class DashboardStats(BaseModel):
     totalParts: int
     totalAnalyses: int
     activeComparisons: int
+
+
+class DefectBox(BaseModel):
+    x: int
+    y: int
+    width: int
+    height: int
+    type: str
+    area: float
+
+class DefectAnalysisResponse(BaseModel):
+    total_defects: int
+    image_dimensions: dict
+    defects: List[DefectBox]
