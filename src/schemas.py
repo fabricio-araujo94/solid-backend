@@ -14,6 +14,7 @@ class PartCreate(PartBase):
 
 class Part(PartBase):
     id: int
+    model_3d_url: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

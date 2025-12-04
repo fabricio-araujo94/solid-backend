@@ -36,7 +36,7 @@ class ComparisonJob(Base):
     # Foreign key to link this job to a specific Part
     part_id = Column(Integer, ForeignKey("parts.id"), nullable=False)
 
-    status = Column(String(50), nullable=False, default="PENDING")
+    status = Column(String(50), nullable=False, default="pending")
     input_side_image_url = Column(String(255), nullable=False)
     input_front_image_url = Column(String(255), nullable=False)
     output_model_url = Column(String(255), nullable=True)
