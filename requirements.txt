@@ -5,3 +5,8 @@ python-dotenv
 python-multipart
 opencv-python
 numpy
+rembg 
+trimesh 
+scikit-image 
+onnxruntime
+cryptography
