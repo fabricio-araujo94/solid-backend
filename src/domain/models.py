@@ -16,6 +16,7 @@ class Part(Base):
     front_image_url = Column(String(255), nullable=False)
     
     model_3d_url = Column(String(255), nullable=False, default="./examples/key.stl")
+    part_type = Column(String(50), nullable=False, default="reference") # 'reference' or 'sample'
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

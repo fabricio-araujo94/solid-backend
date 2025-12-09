@@ -8,6 +8,7 @@ class PartBase(BaseModel):
     sku: str
     side_image_url: str
     front_image_url: str
+    part_type: str = "reference"
 
 class PartCreate(PartBase):
     pass

@@ -13,8 +13,11 @@ class SqlAlchemyPartRepository:
     def get_part_by_sku(self, sku: str) -> Optional[models.Part]:
         return self.db.query(models.Part).filter(models.Part.sku == sku).first()
 
-    def get_parts(self, skip: int = 0, limit: int = 100) -> List[models.Part]:
-        return self.db.query(models.Part).offset(skip).limit(limit).all()
+    def get_parts(self, skip: int = 0, limit: int = 100, part_type: Optional[str] = None) -> List[models.Part]:
+        query = self.db.query(models.Part)
+        if part_type:
+            query = query.filter(models.Part.part_type == part_type)
+        return query.offset(skip).limit(limit).all()
 
     def create_part(self, part: schemas.PartCreate) -> models.Part:
         db_part = models.Part(**part.model_dump())
