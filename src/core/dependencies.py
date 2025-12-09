@@ -1,0 +1,24 @@
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from .database import get_db
+from ..repositories.interfaces import IPartRepository, IJobRepository, IStatsRepository
+from ..repositories.sqlalchemy_impl import SqlAlchemyPartRepository, SqlAlchemyJobRepository, SqlAlchemyStatsRepository
+from ..services.storage import IFileStorage, LocalFileStorage
+from ..services.defect_service import DefectService, OpenCVContrastDefectDetector
+
+def get_part_repository(db: Session = Depends(get_db)) -> IPartRepository:
+    return SqlAlchemyPartRepository(db)
+
+def get_job_repository(db: Session = Depends(get_db)) -> IJobRepository:
+    return SqlAlchemyJobRepository(db)
+
+def get_stats_repository(db: Session = Depends(get_db)) -> IStatsRepository:
+    return SqlAlchemyStatsRepository(db)
+
+def get_file_storage() -> IFileStorage:
+    # In a real app, base_url could come from settings
+    return LocalFileStorage(base_url="http://localhost:8000")
+
+def get_defect_service() -> DefectService:
+    # Injecting the concrete strategy here (Composition Root for this scope)
+    return DefectService(OpenCVContrastDefectDetector())
