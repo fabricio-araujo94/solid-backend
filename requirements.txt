@@ -9,4 +9,5 @@ rembg
 trimesh 
 scikit-image 
 onnxruntime
-cryptography
+cryptographyc
+cloudinary

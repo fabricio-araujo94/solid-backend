@@ -14,7 +14,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # 1. Abstraction
 class ReconstructionStrategy(ABC):
     @abstractmethod
-    def reconstruct(self, front_image_bytes: bytes, side_image_bytes: bytes, filename_prefix: str, identifier: int) -> str:
+    def reconstruct(self, front_input: str, side_input: str, filename_prefix: str, identifier: int) -> str:
         """
         Abstract method to generate a 3D model from images.
         Returns the path to the saved model file.
@@ -23,13 +23,11 @@ class ReconstructionStrategy(ABC):
 
 # 2. Concrete Implementation (Silhouette Based)
 class SilhouetteReconstructionStrategy(ReconstructionStrategy):
-    def reconstruct(self, front_image_bytes: bytes, side_image_bytes: bytes, filename_prefix: str, identifier: int) -> str:
-        # 1. Decodificar bytes para Imagem OpenCV
-        front_nparr = np.frombuffer(front_image_bytes, np.uint8)
-        side_nparr = np.frombuffer(side_image_bytes, np.uint8)
-        
-        img_frontal = cv2.imdecode(front_nparr, cv2.IMREAD_COLOR)
-        img_lateral = cv2.imdecode(side_nparr, cv2.IMREAD_COLOR)
+    def reconstruct(self, front_input: str, side_input: str, filename_prefix: str, identifier: int) -> str:
+        # 1. Image Loading (from Path)
+        print(f"Loading images from: {front_input} and {side_input}")
+        img_frontal = cv2.imread(front_input, cv2.IMREAD_COLOR)
+        img_lateral = cv2.imread(side_input, cv2.IMREAD_COLOR)
 
         if img_frontal is None or img_lateral is None:
             raise ValueError("Falha ao decodificar imagens enviadas.")
@@ -98,8 +96,8 @@ class ReconstructionService:
     def __init__(self, strategy: ReconstructionStrategy):
         self.strategy = strategy
 
-    def process(self, front_image_bytes: bytes, side_image_bytes: bytes, filename_prefix: str, identifier: int) -> str:
-        return self.strategy.reconstruct(front_image_bytes, side_image_bytes, filename_prefix, identifier)
+    def process(self, front_input: str, side_input: str, filename_prefix: str, identifier: int) -> str:
+        return self.strategy.reconstruct(front_input, side_input, filename_prefix, identifier)
 
 def process_images_to_3d(front_image_bytes: bytes, side_image_bytes: bytes, filename_prefix: str, identifier: int) -> str:
     # Uses the default strategy. This can be extended to select strategy via factory.

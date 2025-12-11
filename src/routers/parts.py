@@ -28,13 +28,11 @@ async def create_new_part(
     if db_part:
         raise HTTPException(status_code=400, detail=f"SKU '{sku}' already registered.")
 
-    front_bytes = await front_image.read()
-    side_bytes = await side_image.read()
+    # Streaming Upload (Optimized for Memory)
+    STATIC_IMAGES_DIR = "uploads/images" # Can be 'folder' in Cloudinary
     
-    STATIC_IMAGES_DIR = "static/images"
-    
-    _, side_url = file_storage.save(side_bytes, side_image.filename, STATIC_IMAGES_DIR)
-    _, front_url = file_storage.save(front_bytes, front_image.filename, STATIC_IMAGES_DIR)
+    _, side_url = file_storage.save_stream(side_image.file, side_image.filename, STATIC_IMAGES_DIR)
+    _, front_url = file_storage.save_stream(front_image.file, front_image.filename, STATIC_IMAGES_DIR)
 
     part_data = schemas.PartCreate(
         name=name,
@@ -48,8 +46,8 @@ async def create_new_part(
     background_tasks.add_task(
         process_part_3d_generation,
         new_part.id,
-        front_bytes,
-        side_bytes
+        front_url,
+        side_url
     )
     
     return new_part
