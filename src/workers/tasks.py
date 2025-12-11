@@ -64,6 +64,8 @@ def process_part_3d_generation(part_id: int, front_url: str, side_url: str):
             if os.path.exists(local_model_path): os.remove(local_model_path)
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"Critical Error generating 3D for part {part_id}: {e}")
     finally:
         db.close()
@@ -118,6 +120,8 @@ def process_job_3d_generation(job_id: int, front_url: str, side_url: str):
             if os.path.exists(local_model_path): os.remove(local_model_path)
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"Critical Error in Job {job_id}: {e}")
         job_repo.update_job_status(job_id, "FAILED")
     finally:

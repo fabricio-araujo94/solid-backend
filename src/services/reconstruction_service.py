@@ -8,8 +8,9 @@ import requests
 
 import os
 import uuid
+import tempfile
 
-OUTPUT_DIR = "uploads/models"
+OUTPUT_DIR = tempfile.gettempdir()
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # 1. Abstraction
