@@ -90,7 +90,9 @@ class SilhouetteReconstructionStrategy(ReconstructionStrategy):
         mf_recortada = np.pad(mf_recortada, 1, mode='constant', constant_values=0)
         ml_recortada = np.pad(ml_recortada, 1, mode='constant', constant_values=0)
 
-        altura_alvo = max(mf_recortada.shape[0], ml_recortada.shape[0])
+
+        MAX_RESOLUTION = 300
+        altura_alvo = min(max(mf_recortada.shape[0], ml_recortada.shape[0]), MAX_RESOLUTION)
         
         def redimensionar(mascara, h_alvo):
             h, w = mascara.shape
