@@ -21,7 +21,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # CORS Configuration
-origins = ["http://localhost:4200"]
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS")
+origins = allowed_origins_env.split(",") if allowed_origins_env else ["http://localhost:4200"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
