@@ -4,7 +4,8 @@ import cv2
 import numpy as np
 import trimesh
 from skimage import measure
-from rembg import remove
+import requests
+
 import os
 import uuid
 
@@ -33,12 +34,42 @@ class SilhouetteReconstructionStrategy(ReconstructionStrategy):
             raise ValueError("Falha ao decodificar imagens enviadas.")
 
         print(f"[{filename_prefix}_{identifier}] Iniciando segmentação IA...")
-        
+
         def get_mask(img):
-            result = remove(img)
-            mask = result[:, :, 3]
-            _, binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
-            return binary
+            api_key = os.environ.get("CLIPDROP_API_KEY")
+            if not api_key:
+                raise ValueError("CLIPDROP_API_KEY não encontrada nas variáveis de ambiente.")
+
+            # Encode image to bytes for API
+            is_success, buffer = cv2.imencode(".jpg", img)
+            if not is_success:
+                 raise ValueError("Falha ao codificar imagem para API.")
+            
+            headers = {
+                'x-api-key': api_key,
+            }
+            files = {
+                'image_file': ('image.jpg', buffer.tobytes(), 'image/jpeg')
+            }
+
+            response = requests.post('https://clipdrop-api.co/remove-background/v1', headers=headers, files=files) 
+
+            if response.status_code == 200:
+                # Decode response image
+                img_array = np.frombuffer(response.content, np.uint8)
+                result = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
+                
+                # Extract alpha channel as mask
+                if result.shape[2] == 4:
+                    mask = result[:, :, 3]
+                else:
+                    # Fallback if no alpha channel returned (unexpected from remove-bg)
+                    mask = result 
+                
+                _, binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
+                return binary
+            else:
+                raise Exception(f"Erro na API Clipdrop: {response.status_code} - {response.text}")
 
         mascara_frontal = get_mask(img_frontal)
         mascara_lateral = get_mask(img_lateral)
