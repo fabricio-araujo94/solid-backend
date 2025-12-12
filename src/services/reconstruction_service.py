@@ -10,7 +10,9 @@ import os
 import uuid
 import tempfile
 
-OUTPUT_DIR = tempfile.gettempdir()
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+OUTPUT_DIR = os.path.join(BASE_DIR, 'uploads', 'models')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # 1. Abstraction
