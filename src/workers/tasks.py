@@ -12,9 +12,7 @@ def process_part_3d_generation(part_id: int, front_url: str, side_url: str):
     strategy = SilhouetteReconstructionStrategy()
     service = ReconstructionService(strategy)
     
-    # Needs storage to upload the result
-    from ..core.dependencies import get_file_storage
-    file_storage = get_file_storage()
+    # Models will be kept locally in uploads/models (no cloud upload)
 
     import requests
     import tempfile
@@ -31,16 +29,16 @@ def process_part_3d_generation(part_id: int, front_url: str, side_url: str):
             side_path = tf_side.name
 
         try:
-            # Call service with file paths
+            # Call service with file paths (service already saves model to uploads/models)
             local_model_path = service.process(
                 front_path, side_path, "part", part_id
             )
-            
-            # Upload the generated model to Storage (Cloudinary)
-            with open(local_model_path, "rb") as model_file:
-                _, web_url = file_storage.save_stream(model_file, os.path.basename(local_model_path), "uploads/models")
-            
-            # Updates the part's model_3d_url field with the Cloudinary URL
+
+            # Build a local URL to the saved model instead of uploading to Cloudinary
+            base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
+            web_url = f"{base_url}/uploads/models/{os.path.basename(local_model_path)}"
+
+            # Updates the part's model_3d_url field with the local URL
             # OPEN DB SESSION ONLY HERE
             db = SessionLocal()
             try:
@@ -52,12 +50,11 @@ def process_part_3d_generation(part_id: int, front_url: str, side_url: str):
                     print(f"Part {part_id} updated with 3D model: {web_url}")
             finally:
                 db.close()
-                
+
         finally:
-            # Cleanup temp input files
+            # Cleanup temp input files (keep generated model file in uploads/models)
             if os.path.exists(front_path): os.remove(front_path)
             if os.path.exists(side_path): os.remove(side_path)
-            if os.path.exists(local_model_path): os.remove(local_model_path)
 
     except Exception as e:
         import traceback
@@ -79,9 +76,7 @@ def process_job_3d_generation(job_id: int, front_url: str, side_url: str):
     strategy = SilhouetteReconstructionStrategy()
     service = ReconstructionService(strategy)
     
-    # Needs storage to upload the result
-    from ..core.dependencies import get_file_storage
-    file_storage = get_file_storage()
+    # Models will be kept locally in uploads/models (no cloud upload)
 
     import requests
     import tempfile
@@ -97,29 +92,28 @@ def process_job_3d_generation(job_id: int, front_url: str, side_url: str):
             front_path = tf_front.name
             side_path = tf_side.name
 
-        try:
-            # Call service with 'job' prefix
-            local_model_path = service.process(
-                front_path, side_path, "job", job_id
-            )
-            
-            # Upload the generated model to Storage
-            with open(local_model_path, "rb") as model_file:
-                 _, web_url = file_storage.save_stream(model_file, os.path.basename(local_model_path), "uploads/models")
-            
-            # 2. Update status to COMPLETE (Quick DB access)
-            db = SessionLocal()
             try:
-                job_repo = SqlAlchemyJobRepository(db)
-                job_repo.update_job_status(job_id, "COMPLETE", output_url=web_url)
-                print(f"Job {job_id} completed: {web_url}")
+                # Call service with 'job' prefix (service already saves model to uploads/models)
+                local_model_path = service.process(
+                    front_path, side_path, "job", job_id
+                )
+
+                # Build a local URL to the saved model instead of uploading to Cloudinary
+                base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
+                web_url = f"{base_url}/uploads/models/{os.path.basename(local_model_path)}"
+
+                # 2. Update status to COMPLETE (Quick DB access)
+                db = SessionLocal()
+                try:
+                    job_repo = SqlAlchemyJobRepository(db)
+                    job_repo.update_job_status(job_id, "COMPLETE", output_url=web_url)
+                    print(f"Job {job_id} completed: {web_url}")
+                finally:
+                    db.close()
+                
             finally:
-                db.close()
-            
-        finally:
-            if os.path.exists(front_path): os.remove(front_path)
-            if os.path.exists(side_path): os.remove(side_path)
-            if os.path.exists(local_model_path): os.remove(local_model_path)
+                if os.path.exists(front_path): os.remove(front_path)
+                if os.path.exists(side_path): os.remove(side_path)
         
     except Exception as e:
         import traceback
