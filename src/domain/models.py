@@ -35,7 +35,7 @@ class ComparisonJob(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     # Foreign key to link this job to a specific Part
-    part_id = Column(Integer, ForeignKey("parts.id"), nullable=False)
+    part_id = Column(Integer, ForeignKey("parts.id", ondelete="CASCADE"), nullable=False)
 
     status = Column(String(50), nullable=False, default="pending")
     input_side_image_url = Column(String(255), nullable=False)

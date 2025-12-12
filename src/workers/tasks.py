@@ -8,7 +8,6 @@ import os
 def process_part_3d_generation(part_id: int, front_url: str, side_url: str):
     """Generates the 3D model for the Standard Part (Reference) in a worker process."""
     
-    # Composition Root for Worker Scope
     strategy = SilhouetteReconstructionStrategy()
     service = ReconstructionService(strategy)
     
@@ -18,7 +17,6 @@ def process_part_3d_generation(part_id: int, front_url: str, side_url: str):
     import tempfile
     
     try:
-        # Download images to temp files
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tf_front, \
              tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tf_side:
             
@@ -35,7 +33,7 @@ def process_part_3d_generation(part_id: int, front_url: str, side_url: str):
             )
 
             # Build a local URL to the saved model instead of uploading to Cloudinary
-            base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
+            base_url = os.getenv("API_BASE_URL", "https://special-rotary-phone-pvwjvqvv95c99jp-8000.app.github.dev")
             web_url = f"{base_url}/uploads/models/{os.path.basename(local_model_path)}"
 
             # Updates the part's model_3d_url field with the local URL
@@ -52,7 +50,6 @@ def process_part_3d_generation(part_id: int, front_url: str, side_url: str):
                 db.close()
 
         finally:
-            # Cleanup temp input files (keep generated model file in uploads/models)
             if os.path.exists(front_path): os.remove(front_path)
             if os.path.exists(side_path): os.remove(side_path)
 
@@ -64,7 +61,6 @@ def process_part_3d_generation(part_id: int, front_url: str, side_url: str):
 def process_job_3d_generation(job_id: int, front_url: str, side_url: str):
     """Generates the 3D model for the Comparison Job in a worker process."""
     
-    # 1. Update status to PROCESSING (Quick DB access)
     db = SessionLocal()
     try:
         job_repo = SqlAlchemyJobRepository(db)
@@ -99,7 +95,7 @@ def process_job_3d_generation(job_id: int, front_url: str, side_url: str):
                 )
 
                 # Build a local URL to the saved model instead of uploading to Cloudinary
-                base_url = os.getenv("API_BASE_URL", "http://localhost:8000")
+                base_url = os.getenv("API_BASE_URL", "https://special-rotary-phone-pvwjvqvv95c99jp-8000.app.github.dev")
                 web_url = f"{base_url}/uploads/models/{os.path.basename(local_model_path)}"
 
                 # 2. Update status to COMPLETE (Quick DB access)

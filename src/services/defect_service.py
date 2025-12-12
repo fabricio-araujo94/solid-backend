@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import cv2
 import numpy as np
 
-# 1. Abstraction (Open for extension)
 class DefectDetectorStrategy(ABC):
     @abstractmethod
     def detect(self, image_bytes: bytes) -> dict:
@@ -12,7 +11,6 @@ class DefectDetectorStrategy(ABC):
         """
         pass
 
-# 2. Concrete Implementation (The existing logic)
 class OpenCVContrastDefectDetector(DefectDetectorStrategy):
     def detect(self, image_bytes: bytes) -> dict:
         nparr = np.frombuffer(image_bytes, np.uint8)
@@ -51,7 +49,6 @@ class OpenCVContrastDefectDetector(DefectDetectorStrategy):
             "image_dimensions": {"width": img.shape[1], "height": img.shape[0]}
         }
 
-# 3. Service with Dependency Injection
 class DefectService:
     def __init__(self, strategy: DefectDetectorStrategy):
         self.strategy = strategy
@@ -59,7 +56,6 @@ class DefectService:
     def analyze(self, image_bytes: bytes) -> dict:
         return self.strategy.detect(image_bytes)
 
-# Legacy wrapper if needed, but we will migrate callers
 def analyze_image_for_defects(image_bytes: bytes) -> dict:
     service = DefectService(OpenCVContrastDefectDetector())
     return service.analyze(image_bytes)

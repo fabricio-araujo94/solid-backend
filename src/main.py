@@ -22,10 +22,13 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # CORS Configuration
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS")
-origins = allowed_origins_env.split(",") if allowed_origins_env else ["http://localhost:4200"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=[
+        "https://urban-enigma-gwvgrg94j4x3wq7g-4200.app.github.dev",
+        "https://special-rotary-phone-pvwjvqvv95c99jp-8000.app.github.dev"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"], 

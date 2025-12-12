@@ -1,7 +1,7 @@
 import os
 import uuid
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://special-rotary-phone-pvwjvqvv95c99jp-8000.app.github.dev"
 
 def save_file_to_disk(file_bytes: bytes, original_filename: str, directory: str, prefix: str = "") -> tuple[str, str]:
     """

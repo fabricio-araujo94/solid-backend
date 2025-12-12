@@ -41,8 +41,8 @@ async def create_and_run_comparison(
     background_tasks.add_task(
         process_job_3d_generation, 
         db_job.id, 
-        front_bytes, 
-        side_bytes
+        front_url, 
+        side_url  
     )
 
     return db_job
