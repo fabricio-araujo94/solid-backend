@@ -1,10 +1,12 @@
 # reconstruction_service.py
 from abc import ABC, abstractmethod
+from typing import Union
+
 import cv2
 import numpy as np
 import trimesh
 from skimage import measure
-import requests
+from rembg import remove
 
 import os
 import uuid
@@ -18,7 +20,7 @@ os.makedirs(OUTPUT_DIR, exist_ok=True)
 # 1. Abstraction
 class ReconstructionStrategy(ABC):
     @abstractmethod
-    def reconstruct(self, front_input: str, side_input: str, filename_prefix: str, identifier: int) -> str:
+    def reconstruct(self, front_input: Union[str, bytes], side_input: Union[str, bytes], filename_prefix: str, identifier: int) -> str:
         """
         Abstract method to generate a 3D model from images.
         Returns the path to the saved model file.
@@ -27,52 +29,52 @@ class ReconstructionStrategy(ABC):
 
 # 2. Concrete Implementation (Silhouette Based)
 class SilhouetteReconstructionStrategy(ReconstructionStrategy):
-    def reconstruct(self, front_input: str, side_input: str, filename_prefix: str, identifier: int) -> str:
-        # 1. Image Loading (from Path)
-        print(f"Loading images from: {front_input} and {side_input}")
-        img_frontal = cv2.imread(front_input, cv2.IMREAD_COLOR)
-        img_lateral = cv2.imread(side_input, cv2.IMREAD_COLOR)
+    def reconstruct(self, front_input: Union[str, bytes], side_input: Union[str, bytes], filename_prefix: str, identifier: int) -> str:
+        # 1. Image Loading (path or bytes)
+        print(f"Loading images")
+        def load_image(inp):
+            if isinstance(inp, (bytes, bytearray)):
+                img = cv2.imdecode(np.frombuffer(inp, np.uint8), cv2.IMREAD_COLOR)
+            else:
+                img = cv2.imread(inp, cv2.IMREAD_COLOR)
+            return img
+
+        img_frontal = load_image(front_input)
+        img_lateral = load_image(side_input)
 
         if img_frontal is None or img_lateral is None:
             raise ValueError("Falha ao decodificar imagens enviadas.")
 
-        print(f"[{filename_prefix}_{identifier}] Iniciando segmentação IA...")
+        print(f"[{filename_prefix}_{identifier}] Iniciando segmentação (rembg)...")
 
         def get_mask(img):
-            api_key = os.environ.get("CLIPDROP_API_KEY")
-            if not api_key:
-                raise ValueError("CLIPDROP_API_KEY não encontrada nas variáveis de ambiente.")
-
-            # Encode image to bytes for API
-            is_success, buffer = cv2.imencode(".jpg", img)
+            # Use rembg to remove background and obtain alpha mask
+            is_success, buffer = cv2.imencode(".png", img)
             if not is_success:
-                 raise ValueError("Falha ao codificar imagem para API.")
-            
-            headers = {
-                'x-api-key': api_key,
-            }
-            files = {
-                'image_file': ('image.jpg', buffer.tobytes(), 'image/jpeg')
-            }
+                raise ValueError("Falha ao codificar imagem para rembg.")
 
-            response = requests.post('https://clipdrop-api.co/remove-background/v1', headers=headers, files=files) 
+            input_bytes = buffer.tobytes()
+            try:
+                output_bytes = remove(input_bytes)
+            except Exception as e:
+                raise Exception(f"Erro na rembg: {e}")
 
-            if response.status_code == 200:
-                # Decode response image
-                img_array = np.frombuffer(response.content, np.uint8)
-                result = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
-                
-                # Extract alpha channel as mask
-                if result.shape[2] == 4:
-                    mask = result[:, :, 3]
-                else:
-                    # Fallback if no alpha channel returned (unexpected from remove-bg)
-                    mask = result 
-                
-                _, binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
-                return binary
+            img_array = np.frombuffer(output_bytes, np.uint8)
+            result = cv2.imdecode(img_array, cv2.IMREAD_UNCHANGED)
+            if result is None:
+                raise ValueError("Falha ao decodificar imagem retornada pelo rembg.")
+
+            # Extract alpha channel as mask, or fallback to threshold
+            if result.ndim == 3 and result.shape[2] == 4:
+                mask = result[:, :, 3]
+            elif result.ndim == 2:
+                mask = result
             else:
-                raise Exception(f"Erro na API Clipdrop: {response.status_code} - {response.text}")
+                gray = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
+                _, mask = cv2.threshold(gray, 1, 255, cv2.THRESH_BINARY)
+
+            _, binary = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
+            return binary
 
         mascara_frontal = get_mask(img_frontal)
         mascara_lateral = get_mask(img_lateral)

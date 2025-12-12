@@ -5,7 +5,8 @@ python-dotenv
 python-multipart
 opencv-python
 numpy
-
+rembg
+onnxruntime
 trimesh 
 scikit-image 
 requests
