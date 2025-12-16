@@ -1,0 +1,14 @@
+fastapi[all]
+SQLAlchemy>=1.4
+pymysql
+python-dotenv
+python-multipart
+opencv-python
+numpy
+rembg
+onnxruntime
+trimesh 
+scikit-image 
+requests
+cryptography
+cloudinary
